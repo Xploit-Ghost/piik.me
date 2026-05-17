@@ -9,6 +9,9 @@ const redisUtils = require('./src/utils/redis.utils');
 require('dotenv').config();
 
 // Initialize Firebase Admin
+let db = null;
+let auth = null;
+
 try {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -17,13 +20,16 @@ try {
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
     })
   });
+
+  db = admin.firestore();
+  auth = admin.auth();
+
   console.log('✅ Firebase Admin initialized');
 } catch (error) {
-  console.log('⚠️  Firebase Admin not configured. Using in-memory storage.');
+  console.log('⚠️ Firebase Admin not configured. Using in-memory storage.');
   console.log('   See FIREBASE_SETUP.md for setup instructions.');
+  // db and auth remain null - app will use in-memory fallback
 }
-
-const db = admin.firestore();
 
 const app = express();
 const server = http.createServer(app);
@@ -59,7 +65,15 @@ const COLLECTIONS = {
 };
 
 // Middleware to verify Firebase token
+// Middleware to verify Firebase token
 async function verifyToken(req, res, next) {
+  // If Firebase Auth is not available, reject with clear message
+  if (!auth) {
+    return res.status(503).json({ 
+      error: 'Authentication service unavailable. Please configure Firebase.' 
+    });
+  }
+
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -69,7 +83,7 @@ async function verifyToken(req, res, next) {
   const token = authHeader.split('Bearer ')[1];
   
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {
