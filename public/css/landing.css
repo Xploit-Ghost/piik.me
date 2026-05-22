@@ -887,3 +887,13 @@ img {
 #mobileMenu {
     padding: 2rem;
 }
+
+#mobileMenu a {
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+#mobileMenu a:hover {
+    color: #ffffff;
+}
