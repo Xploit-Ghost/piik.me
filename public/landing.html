@@ -40,6 +40,17 @@
 
     <!-- Dynamic Favicon for /user page -->
     <script src="js/user-favicon.js" defer></script>
+    
+    <!-- Theme Check (Before Body) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+            if (savedTheme === 'light' || (!savedTheme && prefersLight)) {
+                document.documentElement.classList.add('light-theme');
+            }
+        })();
+    </script>
 </head>
 <body class="bg-black text-white overflow-x-hidden antialiased selection:bg-accent selection:text-white">
     
@@ -72,14 +83,24 @@
             
             <!-- Right Side Actions -->
             <div class="hidden md:flex items-center gap-3">
+                <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle dark mode">
+                    <i class="fas fa-sun light-icon" style="display: none;"></i>
+                    <i class="fas fa-moon dark-icon"></i>
+                </button>
                 <button id="loginBtn" class="simple-btn-secondary">LOG IN</button>
                 <button id="getStartedBtn" class="simple-btn-primary">GET STARTED</button>
             </div>
 
-            <!-- Mobile Toggle -->
-            <button class="md:hidden text-white/70 hover:text-white transition-colors p-2" id="mobileMenuToggle" aria-label="Open mobile menu">
-                <i class="fas fa-bars text-xl" aria-hidden="true"></i>
-            </button>
+            <!-- Mobile Toggles -->
+            <div class="flex items-center gap-2 md:hidden">
+                <button id="mobileThemeToggleBtn" class="theme-toggle-btn text-white/70 hover:text-white transition-colors p-2" aria-label="Toggle dark mode">
+                    <i class="fas fa-sun light-icon" style="display: none;"></i>
+                    <i class="fas fa-moon dark-icon text-xl"></i>
+                </button>
+                <button class="text-white/70 hover:text-white transition-colors p-2" id="mobileMenuToggle" aria-label="Open mobile menu">
+                    <i class="fas fa-bars text-xl" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -98,12 +119,12 @@
 
 
     <!-- Hero Section -->
-    <section class="relative min-h-screen flex flex-col justify-center pt-32 pb-32 overflow-hidden" style="background: black;">
+    <section class="relative min-h-screen flex flex-col justify-center pt-32 pb-32 overflow-hidden bg-black hero-bg-section">
         <canvas id="globeViz" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;"></canvas>
         
         <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" style="z-index: 2;"></div>
 
-        <div class="relative w-full max-w-7xl mx-auto px-6 text-center mt-10" style="z-index: 10;">
+        <div class="relative w-full max-w-7xl mx-auto px-6 text-center mt-10 hero-content-wrapper" style="z-index: 10;">
             <div class="flex justify-center">
                 <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 animate-fade-in-up w-fit mx-auto backdrop-blur-md">
                     <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
