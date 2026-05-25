@@ -12,8 +12,8 @@ const { securityHeaders, apiLimiter } = require("./src/middleware/security.middl
 
 // Initialize Firebase Admin
 let db = null;
-let auth = null;
 
+let auth = null;
 try {
   admin.initializeApp({
     credential: admin.credential.cert({
