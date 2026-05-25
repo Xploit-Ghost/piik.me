@@ -8,21 +8,65 @@ const admin = require('firebase-admin');
 const redisUtils = require('./src/utils/redis.utils');
 require('dotenv').config();
 
+// Centralized Firebase runtime state
+const firebaseState = {
+  enabled: false,
+  mode: 'fallback',
+  reason: 'missing_configuration'
+};
+
+function hasFirebaseCredentials() {
+  return Boolean(
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  );
+}
+
+function buildFirebaseDisabledError() {
+  return {
+    error: 'Firebase is disabled in this environment',
+    code: 'FIREBASE_DISABLED',
+    message: 'Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY to enable authentication and persistent database routes.',
+    firebase: {
+      enabled: firebaseState.enabled,
+      mode: firebaseState.mode,
+      reason: firebaseState.reason
+    }
+  };
+}
+
+function setFirebaseState(enabled, reason) {
+  firebaseState.enabled = enabled;
+  firebaseState.mode = enabled ? 'firebase' : 'fallback';
+  firebaseState.reason = reason;
+}
+
 // Initialize Firebase Admin
 let db = null;
-try {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-    })
-  });
-  db = admin.firestore();
-  console.log('✅ Firebase Admin initialized');
-} catch (error) {
-  console.log('⚠️  Firebase Admin not configured. Using in-memory storage.');
-  console.log('   See FIREBASE_SETUP.md for setup instructions.');
+if (!hasFirebaseCredentials()) {
+  setFirebaseState(false, 'missing_configuration');
+  console.log('⚠️  Firebase credentials are missing. Running in fallback mode.');
+  console.log('   Auth and persistent database routes will be unavailable.');
+  console.log('   See docs/FIREBASE_SETUP.md for setup instructions.');
+} else {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      })
+    });
+    db = admin.firestore();
+    setFirebaseState(true, 'ok');
+    console.log('✅ Firebase Admin initialized');
+  } catch (error) {
+    setFirebaseState(false, 'initialization_failed');
+    console.log('⚠️  Firebase Admin failed to initialize. Running in fallback mode.');
+    console.log(`   Reason: ${error.message}`);
+    console.log('   See docs/FIREBASE_SETUP.md for setup instructions.');
+  }
 }
 
 const app = express();
@@ -50,6 +94,11 @@ function fromFirestoreId(firestoreId) {
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public', { index: false }));
+app.use((req, res, next) => {
+  req.firebase = { ...firebaseState };
+  res.setHeader('X-Firebase-Mode', firebaseState.mode);
+  next();
+});
 
 // Firestore Collections
 const COLLECTIONS = {
@@ -60,6 +109,10 @@ const COLLECTIONS = {
 
 // Middleware to verify Firebase token
 async function verifyToken(req, res, next) {
+  if (!firebaseState.enabled) {
+    return res.status(503).json(buildFirebaseDisabledError());
+  }
+
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -77,6 +130,17 @@ async function verifyToken(req, res, next) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 }
+
+app.get('/api/system/status', (req, res) => {
+  res.json({
+    success: true,
+    firebase: {
+      enabled: firebaseState.enabled,
+      mode: firebaseState.mode,
+      reason: firebaseState.reason
+    }
+  });
+});
 
 // In-memory database (fallback if Firebase not configured)
 const links = new Map();
