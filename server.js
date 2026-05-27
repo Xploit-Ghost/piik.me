@@ -19,7 +19,9 @@ const fetch = (...args) => {
 
 // Initialize Firebase Admin
 let db = null;
+
 let auth = null;
+
 try {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -31,6 +33,10 @@ try {
 
   db = admin.firestore();
   auth = admin.auth();
+
+
+  db = admin.firestore();
+
   console.log('✅ Firebase Admin initialized');
 } catch (error) {
   console.log('⚠️ Firebase Admin not configured. Using in-memory storage.');
