@@ -24,7 +24,6 @@ try {
 
   db = admin.firestore();
   auth = admin.auth();
-
   console.log('✅ Firebase Admin initialized');
 } catch (error) {
   console.log('⚠️ Firebase Admin not configured. Using in-memory storage.');
@@ -32,13 +31,16 @@ try {
 }
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const server = isServerless ? null : http.createServer(app);
+const io = isServerless
+  ? { emit: () => {} }
+  : socketIo(server, {
+      cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+      }
+    });
 
 // Helper function to convert shortCode to Firestore-safe document ID
 // Firestore document IDs cannot contain '/' so we replace with '_'
@@ -1343,22 +1345,26 @@ app.post('/api/admin/sync-redis', verifyToken, async (req, res) => {
   }
 });
 
-// Socket.IO connection
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  socket.on('subscribe', (shortCode) => {
-    console.log(`Client ${socket.id} subscribed to ${shortCode}`);
-    socket.join(`analytics:${shortCode}`);
+if (!isServerless) {
+  // Socket.IO connection
+  io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    
+    socket.on('subscribe', (shortCode) => {
+      console.log(`Client ${socket.id} subscribed to ${shortCode}`);
+      socket.join(`analytics:${shortCode}`);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Client disconnected:', socket.id);
+    });
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+  // Start server
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`🚀 Link360 server running on http://localhost:${PORT}`);
   });
-});
+}
 
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 Link360 server running on http://localhost:${PORT}`);
-});
+module.exports = app;
