@@ -951,7 +951,12 @@ function clearCreateLinkForm() {
     utmMedium.value = '';
     utmCampaign.value = '';
     utmTerm.value = '';
-    utmContent.value = '';
+   utmContent.value = '';
+
+    const expiresAtInput = document.getElementById('expiresAt');
+    const maxClicksInput = document.getElementById('maxClicks');
+    if (expiresAtInput) expiresAtInput.value = '';
+    if (maxClicksInput) maxClicksInput.value = '';
     
     // Reset username prefix
     const usernamePrefix = document.getElementById('usernamePrefix');
@@ -1115,7 +1120,11 @@ async function handleCreateLink() {
                 url,
                 customShortCode: customCode || null,
                 username: userBioSlug || null,
-                utmParams: Object.keys(utmParams).length > 0 ? utmParams : null
+                utmParams: Object.keys(utmParams).length > 0 ? utmParams : null,
+                expiresAt: document.getElementById('expiresAt')?.value || null,
+                maxClicks: document.getElementById('maxClicks')?.value
+                    ? parseInt(document.getElementById('maxClicks').value)
+                    : null
             })
         });
         
@@ -1263,6 +1272,8 @@ function displayLinks(links, filter) {
                 <div class="link-meta">
                     <span><i class="fas fa-calendar"></i> ${formatDate(link.createdAt)}</span>
                     ${link.utmParams ? '<span><i class="fas fa-tags"></i> UTM Enabled</span>' : ''}
+                    ${link.expiresAt ? `<span style="color: var(--accent-orange);"><i class="fas fa-hourglass-half"></i> Expires ${formatDate(link.expiresAt)}</span>` : ''}
+                    ${link.maxClicks ? `<span style="color: var(--accent-blue);"><i class="fas fa-mouse-pointer"></i> ${link.clickCount || 0}/${link.maxClicks} clicks</span>` : ''}
                     ${isInactive && daysRemaining ? `<span style="color: var(--accent-red);"><i class="fas fa-clock"></i> Deletes in ${daysRemaining} days</span>` : ''}
                 </div>
             </div>
