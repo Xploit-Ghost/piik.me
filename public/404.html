@@ -109,12 +109,32 @@
             <i class="fas fa-link-slash"></i>
         </div>
         <h1 class="not-found-title">Link Not Found</h1>
-        <p class="not-found-desc">Oops! The link you're trying to access might be broken, expired, or doesn't exist anymore.</p>
+        <p class="not-found-desc">
+            Oops! The link you're trying to access might be broken, expired, or doesn't exist anymore.<br><br>
+            Redirecting to homepage in <strong id="countdown" style="color: var(--accent-purple, #06b6d4);">5</strong> seconds...
+        </p>
         <div class="not-found-actions">
             <a href="/" class="btn-home">
-                <i class="fas fa-home"></i> Return to Homepage
+                <i class="fas fa-home"></i> Return to Homepage Now
             </a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const countdownEl = document.getElementById('countdown');
+            let timeLeft = 5;
+            
+            const timer = setInterval(() => {
+                timeLeft--;
+                countdownEl.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    window.location.href = '/';
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
