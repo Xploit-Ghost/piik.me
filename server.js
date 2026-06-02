@@ -1741,7 +1741,7 @@ app.get('/:username/:slug', async (req, res) => {
   const { link } = await resolveLinkForRedirect(shortCode);
   
   if (!link) {
-    return res.status(404).send('Link not found');
+    return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
   }
 
   let redirectUrl = link.originalUrl;
@@ -1776,7 +1776,7 @@ app.get('/:shortCode', async (req, res) => {
   const { link } = await resolveLinkForRedirect(shortCode);
   
   if (!link) {
-    return res.status(404).send('Link not found');
+    return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
   }
 
   let redirectUrl = link.originalUrl;
